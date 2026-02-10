@@ -13,26 +13,26 @@ test.describe('保存ダイアログ', () => {
   })
 
   test('「保存」ボタンでダイアログが開く', async ({ page }) => {
-    await page.locator('header').getByRole('button', { name: '保存' }).click()
+    await page.locator('[data-testid="app-header"]').getByRole('button', { name: '保存' }).click()
 
     await expect(page.getByText('ファイルを保存')).toBeVisible()
   })
 
   test('デフォルトファイル名がUntitledである', async ({ page }) => {
-    await page.locator('header').getByRole('button', { name: '保存' }).click()
+    await page.locator('[data-testid="app-header"]').getByRole('button', { name: '保存' }).click()
 
     const input = page.locator('#save-filename')
     await expect(input).toHaveValue('Untitled')
   })
 
   test('プレビューにUntitled.xlsxが表示される', async ({ page }) => {
-    await page.locator('header').getByRole('button', { name: '保存' }).click()
+    await page.locator('[data-testid="app-header"]').getByRole('button', { name: '保存' }).click()
 
     await expect(page.getByText('保存先: Untitled.xlsx')).toBeVisible()
   })
 
   test('CSV切替でプレビューがUntitled.csvになる', async ({ page }) => {
-    await page.locator('header').getByRole('button', { name: '保存' }).click()
+    await page.locator('[data-testid="app-header"]').getByRole('button', { name: '保存' }).click()
 
     const dialog = page.locator('[role="dialog"]')
     await dialog.getByRole('button', { name: 'CSV' }).click()
@@ -41,7 +41,7 @@ test.describe('保存ダイアログ', () => {
   })
 
   test('ファイル名変更でプレビューが更新される', async ({ page }) => {
-    await page.locator('header').getByRole('button', { name: '保存' }).click()
+    await page.locator('[data-testid="app-header"]').getByRole('button', { name: '保存' }).click()
 
     const input = page.locator('#save-filename')
     await input.clear()
@@ -51,7 +51,7 @@ test.describe('保存ダイアログ', () => {
   })
 
   test('「キャンセル」でダイアログが閉じる', async ({ page }) => {
-    await page.locator('header').getByRole('button', { name: '保存' }).click()
+    await page.locator('[data-testid="app-header"]').getByRole('button', { name: '保存' }).click()
 
     const dialog = page.locator('[role="dialog"]')
     await expect(dialog).toBeVisible()
@@ -61,7 +61,7 @@ test.describe('保存ダイアログ', () => {
   })
 
   test('空ファイル名で保存ボタンがdisabledになる', async ({ page }) => {
-    await page.locator('header').getByRole('button', { name: '保存' }).click()
+    await page.locator('[data-testid="app-header"]').getByRole('button', { name: '保存' }).click()
 
     const input = page.locator('#save-filename')
     await input.clear()
@@ -77,7 +77,7 @@ test.describe('保存ダイアログ', () => {
     await fileInput.setInputFiles(path.join(FIXTURES, 'basic.csv'))
     await expect(page.locator('#univer-container')).toBeVisible({ timeout: 10_000 })
 
-    await page.locator('header').getByRole('button', { name: '保存' }).click()
+    await page.locator('[data-testid="app-header"]').getByRole('button', { name: '保存' }).click()
 
     await expect(page.getByText('保存先: basic.csv')).toBeVisible()
   })

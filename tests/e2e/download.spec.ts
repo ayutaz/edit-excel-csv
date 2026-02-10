@@ -13,7 +13,7 @@ test.describe('ダウンロード', () => {
   })
 
   test('XLSX形式でダウンロードできる', async ({ page }) => {
-    await page.locator('header').getByRole('button', { name: '保存' }).click()
+    await page.locator('[data-testid="app-header"]').getByRole('button', { name: '保存' }).click()
 
     const dialog = page.locator('[role="dialog"]')
     const downloadPromise = page.waitForEvent('download')
@@ -24,7 +24,7 @@ test.describe('ダウンロード', () => {
   })
 
   test('CSV形式でダウンロードできる', async ({ page }) => {
-    await page.locator('header').getByRole('button', { name: '保存' }).click()
+    await page.locator('[data-testid="app-header"]').getByRole('button', { name: '保存' }).click()
 
     const dialog = page.locator('[role="dialog"]')
     await dialog.getByRole('button', { name: 'CSV' }).click()
@@ -37,7 +37,7 @@ test.describe('ダウンロード', () => {
   })
 
   test('カスタムファイル名でダウンロードできる', async ({ page }) => {
-    await page.locator('header').getByRole('button', { name: '保存' }).click()
+    await page.locator('[data-testid="app-header"]').getByRole('button', { name: '保存' }).click()
 
     const input = page.locator('#save-filename')
     await input.clear()
@@ -58,7 +58,7 @@ test.describe('ダウンロード', () => {
     await fileInput.setInputFiles(path.join(FIXTURES, 'basic.csv'))
     await expect(page.locator('#univer-container')).toBeVisible({ timeout: 10_000 })
 
-    await page.locator('header').getByRole('button', { name: '保存' }).click()
+    await page.locator('[data-testid="app-header"]').getByRole('button', { name: '保存' }).click()
 
     const dialog = page.locator('[role="dialog"]')
     const downloadPromise = page.waitForEvent('download')

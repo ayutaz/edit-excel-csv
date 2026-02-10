@@ -25,7 +25,7 @@ test.describe('XLSX読み込み', () => {
     await fileInput.setInputFiles(path.join(FIXTURES, 'basic.xlsx'))
 
     await expect(page.locator('#univer-container')).toBeVisible({ timeout: 10_000 })
-    await expect(page.locator('header')).toContainText('basic.xlsx')
+    await expect(page.locator('[data-testid="app-header"]')).toContainText('basic.xlsx')
   })
 
   test('StatusBarにxlsxバッジが表示される', async ({ page }) => {
@@ -33,6 +33,6 @@ test.describe('XLSX読み込み', () => {
     await fileInput.setInputFiles(path.join(FIXTURES, 'basic.xlsx'))
 
     await expect(page.locator('#univer-container')).toBeVisible({ timeout: 10_000 })
-    await expect(page.locator('footer')).toContainText('xlsx')
+    await expect(page.locator('[data-testid="app-footer"]')).toContainText('xlsx')
   })
 })

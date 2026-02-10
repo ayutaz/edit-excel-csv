@@ -6,7 +6,7 @@ interface StatusBarProps {
 
 export function StatusBar({ fileType }: StatusBarProps) {
   return (
-    <footer className="flex h-7 shrink-0 items-center gap-3 border-t bg-muted/40 px-4 text-xs text-muted-foreground">
+    <footer data-testid="app-footer" className="flex h-7 shrink-0 items-center gap-3 border-t bg-muted/40 px-4 text-xs text-muted-foreground">
       {fileType && (
         <span className="rounded bg-secondary px-1.5 py-0.5 font-medium uppercase text-secondary-foreground">
           {fileType}

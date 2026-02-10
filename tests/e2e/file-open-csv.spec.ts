@@ -27,7 +27,7 @@ test.describe('CSV読み込み', () => {
     await fileInput.setInputFiles(path.join(FIXTURES, 'basic.csv'))
 
     await expect(page.locator('#univer-container')).toBeVisible({ timeout: 10_000 })
-    await expect(page.locator('header')).toContainText('basic.csv')
+    await expect(page.locator('[data-testid="app-header"]')).toContainText('basic.csv')
   })
 
   test('StatusBarにcsvバッジが表示される', async ({ page }) => {
@@ -35,7 +35,7 @@ test.describe('CSV読み込み', () => {
     await fileInput.setInputFiles(path.join(FIXTURES, 'basic.csv'))
 
     await expect(page.locator('#univer-container')).toBeVisible({ timeout: 10_000 })
-    await expect(page.locator('footer')).toContainText('csv')
+    await expect(page.locator('[data-testid="app-footer"]')).toContainText('csv')
   })
 
   test('unicode.csvを正しく読み込める', async ({ page }) => {
@@ -46,6 +46,6 @@ test.describe('CSV読み込み', () => {
       page.locator('[data-sonner-toast]').filter({ hasText: 'ファイルを読み込みました' })
     ).toBeVisible({ timeout: 10_000 })
 
-    await expect(page.locator('header')).toContainText('unicode.csv')
+    await expect(page.locator('[data-testid="app-header"]')).toContainText('unicode.csv')
   })
 })

@@ -28,7 +28,7 @@ test.describe('実ファイルテスト: 搬出入届１日用.xlsx', () => {
     await fileInput.setInputFiles(TEST_FILE)
 
     await expect(page.locator('#univer-container')).toBeVisible({ timeout: 15_000 })
-    await expect(page.locator('header')).toContainText('搬出入届１日用.xlsx')
+    await expect(page.locator('[data-testid="app-header"]')).toContainText('搬出入届１日用.xlsx')
   })
 
   test('StatusBarにxlsxバッジが表示される', async ({ page }) => {
@@ -36,7 +36,7 @@ test.describe('実ファイルテスト: 搬出入届１日用.xlsx', () => {
     await fileInput.setInputFiles(TEST_FILE)
 
     await expect(page.locator('#univer-container')).toBeVisible({ timeout: 15_000 })
-    await expect(page.locator('footer')).toContainText('xlsx')
+    await expect(page.locator('[data-testid="app-footer"]')).toContainText('xlsx')
   })
 
   test('保存ダイアログにファイル名が引き継がれる', async ({ page }) => {
@@ -46,7 +46,7 @@ test.describe('実ファイルテスト: 搬出入届１日用.xlsx', () => {
     await expect(page.locator('#univer-container')).toBeVisible({ timeout: 15_000 })
 
     // 保存ダイアログを開く
-    await page.locator('header').getByRole('button', { name: '保存' }).click()
+    await page.locator('[data-testid="app-header"]').getByRole('button', { name: '保存' }).click()
     await expect(page.getByText('ファイルを保存')).toBeVisible()
 
     // ファイル名（拡張子なし）がinputに入っている
@@ -64,7 +64,7 @@ test.describe('実ファイルテスト: 搬出入届１日用.xlsx', () => {
     await expect(page.locator('#univer-container')).toBeVisible({ timeout: 15_000 })
 
     // 保存ダイアログ → ダウンロード
-    await page.locator('header').getByRole('button', { name: '保存' }).click()
+    await page.locator('[data-testid="app-header"]').getByRole('button', { name: '保存' }).click()
 
     const dialog = page.locator('[role="dialog"]')
     const downloadPromise = page.waitForEvent('download')
@@ -81,7 +81,7 @@ test.describe('実ファイルテスト: 搬出入届１日用.xlsx', () => {
     await expect(page.locator('#univer-container')).toBeVisible({ timeout: 15_000 })
 
     // 保存ダイアログ → CSV切替 → ダウンロード
-    await page.locator('header').getByRole('button', { name: '保存' }).click()
+    await page.locator('[data-testid="app-header"]').getByRole('button', { name: '保存' }).click()
 
     const dialog = page.locator('[role="dialog"]')
     await dialog.getByRole('button', { name: 'CSV' }).click()

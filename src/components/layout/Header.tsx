@@ -21,7 +21,7 @@ export function Header({
     : "Excel/CSV エディタ"
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-2 border-b bg-muted/40 px-4">
+    <header data-testid="app-header" className="flex h-12 shrink-0 items-center gap-2 border-b bg-muted/40 px-4">
       <h1 className="text-sm font-semibold select-none">Excel/CSV エディタ</h1>
 
       {fileName && (

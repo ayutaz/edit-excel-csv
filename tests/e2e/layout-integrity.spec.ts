@@ -5,7 +5,7 @@ test.describe('レイアウト整合性', () => {
     await page.goto('/')
 
     // header: h-12 (48px)
-    const header = page.locator('header')
+    const header = page.locator('[data-testid="app-header"]')
     await expect(header).toBeVisible()
     const headerBox = await header.boundingBox()
     expect(headerBox!.height).toBeGreaterThanOrEqual(40)
@@ -17,7 +17,7 @@ test.describe('レイアウト整合性', () => {
     expect(mainBox!.height).toBeGreaterThan(100)
 
     // footer: h-7 (28px) — StatusBar
-    const footer = page.locator('footer')
+    const footer = page.locator('[data-testid="app-footer"]')
     await expect(footer).toBeVisible()
     const footerBox = await footer.boundingBox()
     expect(footerBox!.height).toBeGreaterThanOrEqual(20)
