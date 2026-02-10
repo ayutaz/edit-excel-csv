@@ -19,6 +19,7 @@ export default defineConfig({
           sheetjs: ["xlsx"],
           exceljs: ["exceljs"],
           jspdf: ["jspdf", "jspdf-autotable"],
+          encoding: ["encoding-japanese"],
         },
       },
     },

@@ -15,11 +15,12 @@ import { useUniver } from '@/hooks/useUniver'
 import { useFileIO } from '@/hooks/useFileIO'
 import { useBeforeUnload } from '@/hooks/useBeforeUnload'
 import { createEmptyWorkbook } from '@/core/univer-bridge/empty-workbook'
+import type { CsvEncoding } from '@/core/encoding/types'
 
 const UNIVER_CONTAINER_ID = 'univer-container'
 
 function App() {
-  const { fileName, fileType, isDirty, isLoading, error } = useFileStore()
+  const { fileName, fileType, encoding, isDirty, isLoading, error } = useFileStore()
   const { showWelcome, setShowWelcome } = useUIStore()
   const setError = useFileStore((s) => s.setError)
   const setDirty = useFileStore((s) => s.setDirty)
@@ -109,9 +110,9 @@ function App() {
   }, [])
 
   const handleSaveConfirm = useCallback(
-    (format: 'xlsx' | 'csv' | 'pdf', savedFileName: string) => {
+    (format: 'xlsx' | 'csv' | 'pdf', savedFileName: string, csvEncoding?: CsvEncoding) => {
       setSaveDialogOpen(false)
-      saveFile(format, savedFileName).then(() => {
+      saveFile(format, savedFileName, csvEncoding).then(() => {
         toast.success('ファイルを保存しました')
       })
     },
@@ -151,7 +152,7 @@ function App() {
             />
           }
           statusBar={
-            <StatusBar fileType={fileType} />
+            <StatusBar fileType={fileType} encoding={encoding} />
           }
         >
           {showWelcome && (

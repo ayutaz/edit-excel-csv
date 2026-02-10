@@ -121,7 +121,7 @@ describe('ラウンドトリップテスト', () => {
       const univerData = convertSheetJSToUniverData(wb)
 
       // 3. export-adapter (CSV)
-      const blob = convertUniverToCsv(univerData)
+      const blob = await convertUniverToCsv(univerData)
       expect(blob).toBeInstanceOf(Blob)
 
       // 4. Blobからテキストを取得して再パース
@@ -143,7 +143,7 @@ describe('ラウンドトリップテスト', () => {
       XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
 
       const univerData = convertSheetJSToUniverData(wb)
-      const blob = convertUniverToCsv(univerData)
+      const blob = await convertUniverToCsv(univerData)
 
       // BOMはバイト列 EF BB BF (UTF-8エンコードの\uFEFF)
       const buffer = await blobToArrayBuffer(blob)

@@ -67,6 +67,10 @@ edit-excel-csv/
 │   │   │   ├── import-adapter.ts   # SheetJS → Univer変換
 │   │   │   ├── export-adapter.ts   # Univer → ExcelJS/PapaParse変換
 │   │   │   └── types.ts
+│   │   ├── encoding/               # 文字エンコーディング
+│   │   │   ├── detector.ts         # エンコーディング自動検出
+│   │   │   ├── encoder.ts          # エンコーディング出力
+│   │   │   └── types.ts            # 型定義
 │   │   ├── file-io/                # ファイル入出力
 │   │   │   ├── reader.ts           # ファイル読み込み
 │   │   │   ├── writer.ts           # ファイル書き出し
@@ -145,7 +149,7 @@ pnpm format       # Prettier
 
 - **ファイルサイズ上限**: 50MB（メモリ枯渇防止のため）
 - **同時編集ファイル数**: 1ファイル（シングルファイルモード）
-- **文字エンコーディング**: MVP段階ではUTF-8 CSVのみ正式対応。Shift_JIS/EUC-JPはPhase 2で対応予定
+- **文字エンコーディング**: UTF-8、Shift_JIS、EUC-JP に対応（CSVファイルの自動エンコーディング検出）
 - **セルスタイル**: MVP段階ではスタイル変換未対応（フォント、色、罫線等は無視される）
 - **数式**: SheetJS CEは数式評価不可。Univerの数式エンジンで再計算
 
@@ -174,6 +178,8 @@ CSVエクスポート時に危険なプレフィックス文字（`=`, `+`, `-`,
 - `src/core/univer-bridge/export-adapter.ts` — Univer→ExcelJS/PapaParse変換の正確性
 - `src/core/file-io/validator.ts` — 拡張子、サイズ、マジックバイトの検証
 - `src/core/security/sanitizer.ts` — CSVインジェクション検出ロジック
+- `src/core/encoding/detector.ts` — UTF-8/Shift_JIS/EUC-JP自動検出の精度
+- `src/core/encoding/encoder.ts` — エンコーディング出力の正当性
 
 カバレッジ目標: `src/core/` 配下で80%以上
 

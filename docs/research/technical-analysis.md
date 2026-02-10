@@ -102,18 +102,19 @@ UniverはCanvas描画に伴い動的にstyle要素を注入するため、`unsaf
 
 **MVP段階**: メインスレッドで同期処理。Phase 2でWorker化。
 
-### 2.3 日本語CSV文字エンコーディング対応
+### 2.3 日本語CSV文字エンコーディング対応（実装済み）
 
 日本語環境ではShift_JIS/EUC-JPエンコーディングのCSVファイルが広く使われている。
 
-**PapaParseの対応状況**:
-- PapaParse自体にはShift_JIS/EUC-JP の自動検出・変換機能はない
-- UTF-8およびUTF-8 BOM付きCSVのみネイティブ対応
+**実装済みの検出アルゴリズム**（`src/core/encoding/detector.ts`）:
+1. BOMチェック（UTF-8 BOM `EF BB BF` → UTF-8確定）
+2. `TextDecoder('utf-8', { fatal: true })` で試行 → 成功ならUTF-8
+3. UTF-8失敗時：先頭8KBのバイト頻度分析でShift_JIS vs EUC-JP判定
+4. フォールバック：Shift_JIS（日本で最も一般的な非UTF-8エンコーディング）
 
-**対応方針**:
-- MVP段階: UTF-8 CSVのみ正式対応。Shift_JIS/EUC-JPファイルは文字化けする旨をエラーメッセージで通知
-- Phase 2: `TextDecoder` API + エンコーディング自動判定ライブラリ（`encoding-japanese`等）を導入し、Shift_JIS/EUC-JPの自動検出・変換に対応
-- エクスポート時はUTF-8 BOM付きCSVをデフォルトとする（Excel互換のため）
+**エンコーディング出力**（`src/core/encoding/encoder.ts`）:
+- `encoding-japanese`（MIT）を動的importしてShift_JIS/EUC-JP出力に対応
+- エクスポート時はUTF-8（BOM付き）/ Shift_JIS / EUC-JP を選択可能（デフォルト: UTF-8 BOM付き）
 
 ### 2.4 バンドルサイズ
 

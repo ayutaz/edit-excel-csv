@@ -174,9 +174,9 @@ describe('convertUniverToXlsx', () => {
 })
 
 describe('convertUniverToCsv', () => {
-  it('UTF-8 BOM付きのCSVを生成する', () => {
+  it('UTF-8 BOM付きのCSVを生成する', async () => {
     const snapshot = createSnapshot()
-    const blob = convertUniverToCsv(snapshot)
+    const blob = await convertUniverToCsv(snapshot)
 
     expect(blob).toBeInstanceOf(Blob)
     expect(blob.type).toBe('text/csv;charset=utf-8')
@@ -184,7 +184,7 @@ describe('convertUniverToCsv', () => {
 
   it('正しいCSV内容を生成する', async () => {
     const snapshot = createSnapshot()
-    const blob = convertUniverToCsv(snapshot)
+    const blob = await convertUniverToCsv(snapshot)
 
     // UTF-8 BOMの確認（バイナリレベル: EF BB BF）
     const buffer = await readBlobAsArrayBuffer(blob)
@@ -201,7 +201,7 @@ describe('convertUniverToCsv', () => {
     expect(text).toContain('3.14')
   })
 
-  it('空のワークブックをCSVエクスポートする', () => {
+  it('空のワークブックをCSVエクスポートする', async () => {
     const snapshot: IWorkbookData = {
       id: 'empty',
       name: 'Empty',
@@ -218,12 +218,12 @@ describe('convertUniverToCsv', () => {
       },
     }
 
-    const blob = convertUniverToCsv(snapshot)
+    const blob = await convertUniverToCsv(snapshot)
     expect(blob).toBeInstanceOf(Blob)
     expect(blob.type).toBe('text/csv;charset=utf-8')
   })
 
-  it('指定したシートIDでCSVを生成する', () => {
+  it('指定したシートIDでCSVを生成する', async () => {
     const snapshot: IWorkbookData = {
       id: 'multi',
       name: 'Multi',
@@ -249,8 +249,7 @@ describe('convertUniverToCsv', () => {
       },
     }
 
-    const blob = convertUniverToCsv(snapshot, 'sheet-1')
-    // Blob.text()を使ってcontent確認
+    const blob = await convertUniverToCsv(snapshot, 'sheet-1')
     expect(blob).toBeInstanceOf(Blob)
   })
 
@@ -280,9 +279,59 @@ describe('convertUniverToCsv', () => {
       },
     }
 
-    const blob = convertUniverToCsv(snapshot, 'sheet-1')
+    const blob = await convertUniverToCsv(snapshot, 'sheet-1')
     const text = await readBlobAsText(blob)
     expect(text).toContain('Sheet2Data')
     expect(text).not.toContain('Sheet1Data')
+  })
+
+  it('Shift_JISエンコーディングでCSVを生成する', async () => {
+    const snapshot = createSnapshot()
+    snapshot.sheets['sheet-0']!.cellData = {
+      0: {
+        0: { v: '名前', t: CellValueType.STRING },
+        1: { v: '年齢', t: CellValueType.STRING },
+      },
+      1: {
+        0: { v: '田中', t: CellValueType.STRING },
+        1: { v: 30, t: CellValueType.NUMBER },
+      },
+    }
+
+    const blob = await convertUniverToCsv(snapshot, undefined, 'shift_jis')
+
+    expect(blob).toBeInstanceOf(Blob)
+    expect(blob.type).toBe('text/csv;charset=shift_jis')
+
+    // Shift_JISとしてデコードして内容を確認
+    const buffer = await readBlobAsArrayBuffer(blob)
+    const decoder = new TextDecoder('shift_jis')
+    const text = decoder.decode(buffer)
+    expect(text).toContain('名前')
+    expect(text).toContain('田中')
+    expect(text).toContain('30')
+  })
+
+  it('EUC-JPエンコーディングでCSVを生成する', async () => {
+    const snapshot = createSnapshot()
+    snapshot.sheets['sheet-0']!.cellData = {
+      0: {
+        0: { v: '名前', t: CellValueType.STRING },
+      },
+      1: {
+        0: { v: '佐藤', t: CellValueType.STRING },
+      },
+    }
+
+    const blob = await convertUniverToCsv(snapshot, undefined, 'euc-jp')
+
+    expect(blob).toBeInstanceOf(Blob)
+    expect(blob.type).toBe('text/csv;charset=euc-jp')
+
+    const buffer = await readBlobAsArrayBuffer(blob)
+    const decoder = new TextDecoder('euc-jp')
+    const text = decoder.decode(buffer)
+    expect(text).toContain('名前')
+    expect(text).toContain('佐藤')
   })
 })

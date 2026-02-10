@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import type { CsvEncoding } from "@/core/encoding/types"
 
 type SaveFormat = "xlsx" | "csv" | "pdf"
 
@@ -19,7 +20,7 @@ interface SaveDialogProps {
   onOpenChange: (open: boolean) => void
   currentFileName: string | null
   currentFileType: string | null
-  onSave: (format: SaveFormat, fileName: string) => void
+  onSave: (format: SaveFormat, fileName: string, encoding?: CsvEncoding) => void
 }
 
 function stripExtension(name: string): string {
@@ -38,6 +39,7 @@ export function SaveDialog({
 
   const [format, setFormat] = useState<SaveFormat>(defaultFormat)
   const [baseName, setBaseName] = useState("")
+  const [csvEncoding, setCsvEncoding] = useState<CsvEncoding>("utf-8")
 
   useEffect(() => {
     if (open) {
@@ -45,6 +47,7 @@ export function SaveDialog({
       setBaseName(
         currentFileName ? stripExtension(currentFileName) : "Untitled"
       )
+      setCsvEncoding("utf-8")
     }
   }, [open, currentFileName, defaultFormat])
 
@@ -55,7 +58,7 @@ export function SaveDialog({
 
   const handleSave = () => {
     if (!baseName.trim()) return
-    onSave(format, fullFileName)
+    onSave(format, fullFileName, format === "csv" ? csvEncoding : undefined)
   }
 
   return (
@@ -119,6 +122,46 @@ export function SaveDialog({
               </p>
             )}
           </div>
+
+          {format === "csv" && (
+            <div className="grid gap-2">
+              <Label>文字エンコーディング</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={csvEncoding === "utf-8" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCsvEncoding("utf-8")}
+                  className={cn("flex-1")}
+                >
+                  UTF-8
+                </Button>
+                <Button
+                  type="button"
+                  variant={csvEncoding === "shift_jis" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCsvEncoding("shift_jis")}
+                  className={cn("flex-1")}
+                >
+                  Shift_JIS
+                </Button>
+                <Button
+                  type="button"
+                  variant={csvEncoding === "euc-jp" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCsvEncoding("euc-jp")}
+                  className={cn("flex-1")}
+                >
+                  EUC-JP
+                </Button>
+              </div>
+              {csvEncoding !== "utf-8" && (
+                <p className="text-xs text-muted-foreground">
+                  Excel等での互換性のためUTF-8（BOM付き）を推奨します。
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <DialogFooter>

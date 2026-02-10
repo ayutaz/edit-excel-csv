@@ -3,6 +3,8 @@ import Papa from 'papaparse'
 import { jsPDF } from 'jspdf'
 import autoTable, { type CellDef } from 'jspdf-autotable'
 import { detectCsvInjection } from '@/core/security/sanitizer'
+import { encodeCsvString } from '@/core/encoding/encoder'
+import type { CsvEncoding } from '@/core/encoding/types'
 import type { IWorkbookData, ICellData } from './types'
 
 /**
@@ -92,15 +94,21 @@ export async function convertUniverToXlsx(snapshot: IWorkbookData): Promise<Blob
  * UniverスナップショットをCSVファイル(Blob)に変換する
  * @param snapshot ワークブックスナップショット
  * @param sheetId 変換対象のシートID（省略時はアクティブシート = sheetOrder[0]）
+ * @param encoding 出力エンコーディング（デフォルト: utf-8）
  */
-export function convertUniverToCsv(snapshot: IWorkbookData, sheetId?: string): Blob {
+export async function convertUniverToCsv(
+  snapshot: IWorkbookData,
+  sheetId?: string,
+  encoding: CsvEncoding = 'utf-8',
+): Promise<Blob> {
   const targetSheetId = sheetId ?? snapshot.sheetOrder[0]
   const sheetData = targetSheetId ? snapshot.sheets[targetSheetId] : undefined
 
   if (!sheetData?.cellData) {
     // 空のCSVを生成
     const csv = Papa.unparse([])
-    return new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' })
+    const encoded = await encodeCsvString(csv, encoding)
+    return new Blob([encoded as BlobPart], { type: csvMimeType(encoding) })
   }
 
   const cellData = sheetData.cellData
@@ -138,8 +146,13 @@ export function convertUniverToCsv(snapshot: IWorkbookData, sheetId?: string): B
   detectCsvInjection(data)
 
   const csv = Papa.unparse(data)
-  // UTF-8 BOMを付与（Excel互換のため）
-  return new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' })
+  const encoded = await encodeCsvString(csv, encoding)
+  return new Blob([encoded as BlobPart], { type: csvMimeType(encoding) })
+}
+
+function csvMimeType(encoding: CsvEncoding): string {
+  const charset = encoding === 'shift_jis' ? 'shift_jis' : encoding === 'euc-jp' ? 'euc-jp' : 'utf-8'
+  return `text/csv;charset=${charset}`
 }
 
 /**

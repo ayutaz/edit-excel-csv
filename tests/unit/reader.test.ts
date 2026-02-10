@@ -27,7 +27,7 @@ function blobToText(blob: Blob): Promise<string> {
  */
 function createMockFile(
   name: string,
-  content: ArrayBuffer | string,
+  content: ArrayBuffer | string | Uint8Array,
   type = '',
 ): File {
   const blob =
@@ -52,13 +52,14 @@ describe('readFile', () => {
     const csvContent = 'Name,Age\nAlice,30\nBob,25'
     const file = createMockFile('test.csv', csvContent)
 
-    const workbook = await readFile(file)
+    const result = await readFile(file)
 
-    expect(workbook).toBeDefined()
-    expect(workbook.SheetNames).toHaveLength(1)
-    expect(workbook.SheetNames[0]).toBe('Sheet1')
+    expect(result.workbook).toBeDefined()
+    expect(result.workbook.SheetNames).toHaveLength(1)
+    expect(result.workbook.SheetNames[0]).toBe('Sheet1')
+    expect(result.detectedEncoding).toBe('utf-8')
 
-    const sheet = workbook.Sheets['Sheet1']
+    const sheet = result.workbook.Sheets['Sheet1']
     expect(sheet).toBeDefined()
   })
 
@@ -66,8 +67,8 @@ describe('readFile', () => {
     const csvContent = 'A,B\n1,2\n3,4'
     const file = createMockFile('data.csv', csvContent)
 
-    const workbook = await readFile(file)
-    const sheet = workbook.Sheets['Sheet1']!
+    const result = await readFile(file)
+    const sheet = result.workbook.Sheets['Sheet1']!
 
     const XLSX = await import('xlsx')
     const data = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 })
@@ -92,11 +93,12 @@ describe('readFile', () => {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     )
 
-    const workbook = await readFile(file)
+    const result = await readFile(file)
 
-    expect(workbook).toBeDefined()
-    expect(workbook.SheetNames).toContain('TestSheet')
-    const sheet = workbook.Sheets['TestSheet']!
+    expect(result.workbook).toBeDefined()
+    expect(result.workbook.SheetNames).toContain('TestSheet')
+    expect(result.detectedEncoding).toBeUndefined()
+    const sheet = result.workbook.Sheets['TestSheet']!
     const data = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 })
     expect(data[0]).toEqual(['Header1', 'Header2'])
     expect(data[1]).toEqual(['Data1', 'Data2'])
@@ -111,27 +113,27 @@ describe('readFile', () => {
 
     const file = createMockFile('legacy.xls', buffer)
 
-    const workbook = await readFile(file)
-    expect(workbook).toBeDefined()
-    expect(workbook.SheetNames).toHaveLength(1)
+    const result = await readFile(file)
+    expect(result.workbook).toBeDefined()
+    expect(result.workbook.SheetNames).toHaveLength(1)
   })
 
   it('空のCSVでもWorkBookを返す', async () => {
     const file = createMockFile('empty.csv', '')
 
-    const workbook = await readFile(file)
+    const result = await readFile(file)
 
-    expect(workbook).toBeDefined()
-    expect(workbook.SheetNames).toHaveLength(1)
+    expect(result.workbook).toBeDefined()
+    expect(result.workbook.SheetNames).toHaveLength(1)
   })
 
   it('拡張子で読み込みパスが分岐する', async () => {
     // .csvはPapaParse経由、.xlsxはSheetJS直接読み込み
     // 同じデータでも拡張子によって処理パスが異なることを確認
     const csvFile = createMockFile('test.csv', 'A,B\n1,2')
-    const csvWorkbook = await readFile(csvFile)
+    const csvResult = await readFile(csvFile)
     // CSV読み込みはSheet1固定
-    expect(csvWorkbook.SheetNames[0]).toBe('Sheet1')
+    expect(csvResult.workbook.SheetNames[0]).toBe('Sheet1')
 
     const XLSX = await import('xlsx')
     const ws = XLSX.utils.aoa_to_sheet([['A', 'B'], [1, 2]])
@@ -139,8 +141,52 @@ describe('readFile', () => {
     XLSX.utils.book_append_sheet(wb, ws, 'CustomName')
     const buffer = XLSX.write(wb, { type: 'array', bookType: 'xlsx' })
     const xlsxFile = createMockFile('test.xlsx', buffer)
-    const xlsxWorkbook = await readFile(xlsxFile)
+    const xlsxResult = await readFile(xlsxFile)
     // Excel読み込みは元のシート名を保持
-    expect(xlsxWorkbook.SheetNames[0]).toBe('CustomName')
+    expect(xlsxResult.workbook.SheetNames[0]).toBe('CustomName')
+  })
+
+  it('エンコーディング手動指定でCSVを読み込む', async () => {
+    // encoding-japaneseで Shift_JIS バイト列を生成
+    const Encoding = await import('encoding-japanese')
+    const text = '名前,年齢\n田中太郎,30'
+    const unicodeArray = Encoding.stringToCode(text)
+    const sjisBytes = new Uint8Array(
+      Encoding.convert(unicodeArray, { to: 'SJIS', from: 'UNICODE' }),
+    )
+
+    const file = createMockFile('sjis.csv', sjisBytes, 'text/csv')
+
+    const result = await readFile(file, 'shift_jis')
+    expect(result.detectedEncoding).toBe('shift_jis')
+
+    const XLSX = await import('xlsx')
+    const data = XLSX.utils.sheet_to_json<string[]>(
+      result.workbook.Sheets['Sheet1']!,
+      { header: 1 },
+    )
+    expect(data[0]).toEqual(['名前', '年齢'])
+    expect(data[1]).toEqual(['田中太郎', '30'])
+  })
+
+  it('Shift_JIS CSVの自動検出で正しく読み込む', async () => {
+    const Encoding = await import('encoding-japanese')
+    const text = '名前,年齢\n田中太郎,30\n鈴木花子,25'
+    const unicodeArray = Encoding.stringToCode(text)
+    const sjisBytes = new Uint8Array(
+      Encoding.convert(unicodeArray, { to: 'SJIS', from: 'UNICODE' }),
+    )
+
+    const file = createMockFile('auto_sjis.csv', sjisBytes, 'text/csv')
+
+    const result = await readFile(file)
+    expect(result.detectedEncoding).toBe('shift_jis')
+
+    const XLSX = await import('xlsx')
+    const data = XLSX.utils.sheet_to_json<string[]>(
+      result.workbook.Sheets['Sheet1']!,
+      { header: 1 },
+    )
+    expect(data[0]).toEqual(['名前', '年齢'])
   })
 })

@@ -19,6 +19,7 @@
     "@univerjs/presets": "^0.6.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "encoding-japanese": "^2.2.0",
     "exceljs": "^4.4.0",
     "jspdf": "^4.1.0",
     "jspdf-autotable": "^5.0.7",

@@ -45,6 +45,7 @@ Excel/CSVブラウザ編集Webアプリのアーキテクチャ設計をまと�
 │  │ Core Logic (UI非依存)               ││
 │  │ - univer-bridge (結合レイヤー)      ││
 │  │ - file-io (読み書き)               ││
+│  │ - encoding (文字エンコーディング)     ││
 │  │ - security (バリデーション)         ││
 │  └─────────────────────────────────────┘│
 └─────────────────────────────────────────┘
@@ -72,6 +73,10 @@ edit-excel-csv/
 │   │   │   ├── import-adapter.ts             # SheetJS → Univer変換
 │   │   │   ├── export-adapter.ts             # Univer → ExcelJS/PapaParse変換
 │   │   │   └── types.ts                      # 共有型定義
+│   │   ├── encoding/                          # 文字エンコーディング
+│   │   │   ├── detector.ts                    # エンコーディング自動検出
+│   │   │   ├── encoder.ts                     # エンコーディング出力
+│   │   │   └── types.ts                       # 型定義
 │   │   ├── file-io/                          # ファイル入出力
 │   │   │   ├── reader.ts                     # ファイル読み込み
 │   │   │   ├── writer.ts                     # ファイル書き出し
@@ -139,7 +144,9 @@ validator.ts: ファイルバリデーション
   - マジックバイトチェック
     │
     ▼
-reader.ts: SheetJS XLSX.read(buffer, { type: 'array' })
+reader.ts: ファイル読み込み
+    │  CSV: detectEncoding(buffer) で自動検出 → TextDecoder でデコード → PapaParse
+    │  Excel: SheetJS XLSX.read(buffer, { type: 'array' })
     │  → SheetJS WorkBook オブジェクト
     ▼
 import-adapter.ts: convertWorkbookToUniverData(workbook)
@@ -171,6 +178,7 @@ export-adapter.ts: convertUniverDataToExcelJS(snapshot)
     │                  → Blob → URL.createObjectURL → ダウンロード
     │
     └── [csv出力]  → PapaParse Papa.unparse(data)
+                       → encodeCsvString(csv, encoding)
                        → Blob → URL.createObjectURL → ダウンロード
 ```
 
@@ -244,6 +252,7 @@ interface FileStore {
   // 状態
   fileName: string | null;        // 現在のファイル名
   fileType: 'xlsx' | 'csv' | 'xls' | null;  // ファイル形式
+  encoding: CsvEncoding | null;    // CSVエンコーディング（utf-8/shift_jis/euc-jp）
   isDirty: boolean;               // 未保存変更あり
   isLoading: boolean;             // ファイル読み込み中
 
