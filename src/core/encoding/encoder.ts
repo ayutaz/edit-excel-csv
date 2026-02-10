@@ -25,7 +25,7 @@ export async function encodeCsvString(
   let Encoding: typeof import('encoding-japanese')
   try {
     Encoding = await import('encoding-japanese')
-  } catch (e) {
+  } catch {
     throw new Error(
       `エンコーディングライブラリの読み込みに失敗しました（encoding: ${encoding}）。` +
         `encoding-japanese パッケージがインストールされているか確認してください。`,
