@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { CellValueType, LocaleType, BooleanNumber } from '@univerjs/presets'
-import { convertUniverToXlsx, convertUniverToCsv } from '@/core/univer-bridge/export-adapter'
+import { convertUniverToXlsx, convertUniverToCsv, convertUniverToPdf } from '@/core/univer-bridge/export-adapter'
 import type { IWorkbookData } from '@/core/univer-bridge/types'
 
 /** jsdom環境でBlobのテキストを読み取るヘルパー */
@@ -333,5 +333,46 @@ describe('convertUniverToCsv', () => {
     const text = decoder.decode(buffer)
     expect(text).toContain('名前')
     expect(text).toContain('佐藤')
+  })
+})
+
+// font-loaderをモック: jsPDFの組み込みフォントをそのまま使う（ダミーフォント登録を回避）
+vi.mock('@/core/pdf/font-loader', () => ({
+  loadJapaneseFont: vi.fn().mockResolvedValue(undefined),
+  getJapaneseFontName: vi.fn().mockReturnValue('helvetica'),
+}))
+
+describe('convertUniverToPdf', () => {
+  it('有効なPDF Blobを生成する', async () => {
+    const snapshot = createSnapshot()
+    const blob = await convertUniverToPdf(snapshot)
+
+    expect(blob).toBeInstanceOf(Blob)
+    expect(blob.type).toBe('application/pdf')
+    expect(blob.size).toBeGreaterThan(0)
+  })
+
+  it('空のワークブックでもエラーなくPDFを生成する', async () => {
+    const snapshot: IWorkbookData = {
+      id: 'empty',
+      name: 'Empty',
+      appVersion: '0.1.0',
+      locale: LocaleType.EN_US,
+      styles: {},
+      sheetOrder: ['sheet-0'],
+      sheets: {
+        'sheet-0': {
+          id: 'sheet-0',
+          name: 'Sheet1',
+          cellData: {},
+          mergeData: [],
+        },
+      },
+    }
+
+    const blob = await convertUniverToPdf(snapshot)
+    expect(blob).toBeInstanceOf(Blob)
+    expect(blob.type).toBe('application/pdf')
+    expect(blob.size).toBeGreaterThan(0)
   })
 })

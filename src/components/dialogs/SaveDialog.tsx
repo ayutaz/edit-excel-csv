@@ -118,7 +118,7 @@ export function SaveDialog({
             </div>
             {format === "pdf" && (
               <p className="text-xs text-muted-foreground">
-                PDF形式は印刷用の読み取り専用フォーマットです。日本語テキストは正しく表示されない場合があります。
+                PDF形式は印刷用の読み取り専用フォーマットです。初回のPDF生成時にフォントデータをダウンロードします。
               </p>
             )}
           </div>

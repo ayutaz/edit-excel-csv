@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs'
 import Papa from 'papaparse'
 import { jsPDF } from 'jspdf'
 import autoTable, { type CellDef } from 'jspdf-autotable'
+import { loadJapaneseFont, getJapaneseFontName } from '@/core/pdf/font-loader'
 import { detectCsvInjection } from '@/core/security/sanitizer'
 import { encodeCsvString } from '@/core/encoding/encoder'
 import type { CsvEncoding } from '@/core/encoding/types'
@@ -158,12 +159,11 @@ function csvMimeType(encoding: CsvEncoding): string {
 /**
  * UniverスナップショットをPDFファイル(Blob)に変換する
  * A4横向き、各シートを別ページに出力
- *
- * 注意: jsPDFのデフォルトフォント(Helvetica)は日本語非対応のため、
- * 日本語テキストは正しく表示されない場合があります。
+ * Noto Sans JPフォントを使用して日本語テキストに対応
  */
-export function convertUniverToPdf(snapshot: IWorkbookData): Blob {
+export async function convertUniverToPdf(snapshot: IWorkbookData): Promise<Blob> {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+  await loadJapaneseFont(doc)
   const pageWidth = doc.internal.pageSize.getWidth()
   const margin = 10
 
@@ -271,6 +271,7 @@ export function convertUniverToPdf(snapshot: IWorkbookData): Blob {
       margin: { left: margin, right: margin },
       theme: 'grid',
       styles: {
+        font: getJapaneseFontName(),
         fontSize: 8,
         cellPadding: 1.5,
         overflow: 'linebreak',

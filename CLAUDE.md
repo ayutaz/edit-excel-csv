@@ -20,6 +20,8 @@ ExcelファイルおよびCSVファイルをMicrosoft Excelライセンス不要
 | Excel読み込み | SheetJS CE (xlsx) | Apache 2.0 | .xlsx/.xls/.csv/.odsパース |
 | Excel書き出し | ExcelJS | MIT | スタイル付き.xlsx生成 |
 | CSV処理 | PapaParse | MIT | 高速CSVパース/生成 |
+| PDF出力 | jsPDF + jspdf-autotable | MIT | PDF テーブル描画・ダウンロード |
+| エンコーディング変換 | encoding-japanese | MIT | Shift_JIS/EUC-JP エンコーディング変換 |
 | UIコンポーネント | shadcn/ui + Tailwind CSS 4 | MIT | ツールバー、ダイアログ等 |
 | アイコン | Lucide React | ISC | UIアイコン |
 | 状態管理 | Zustand | MIT | ファイル状態、UI設定等 |
@@ -33,7 +35,7 @@ ExcelファイルおよびCSVファイルをMicrosoft Excelライセンス不要
 1. File APIでファイルをArrayBufferとして読込
 2. SheetJSでパース → JSON/配列データに変換
 3. UniverのUIで表示・編集
-4. ExcelJSで.xlsxに変換 or PapaParseでCSV生成
+4. ExcelJSで.xlsxに変換 / PapaParseでCSV生成 / jsPDFでPDF出力
 5. Blob + URL.createObjectURL でダウンロード
 
 サーバー不要でデータがクライアントに留まるためプライバシー保護に優れる。
@@ -51,7 +53,7 @@ ExcelファイルおよびCSVファイルをMicrosoft Excelライセンス不要
                                                                          ↓
                                                                    Univerで編集
                                                                          ↓
-[ダウンロード] ← Blob ← ExcelJS/PapaParse ← export-adapter ← Univer Snapshot
+[ダウンロード] ← Blob ← ExcelJS/PapaParse/jsPDF ← export-adapter ← Univer Snapshot
 ```
 
 ## ディレクトリ構成
@@ -66,6 +68,7 @@ edit-excel-csv/
 │   │   │   ├── setup.ts            # Univerインスタンス初期化
 │   │   │   ├── import-adapter.ts   # SheetJS → Univer変換
 │   │   │   ├── export-adapter.ts   # Univer → ExcelJS/PapaParse変換
+│   │   │   ├── empty-workbook.ts   # 新規ワークブック生成
 │   │   │   └── types.ts
 │   │   ├── encoding/               # 文字エンコーディング
 │   │   │   ├── detector.ts         # エンコーディング自動検出
@@ -75,30 +78,38 @@ edit-excel-csv/
 │   │   │   ├── reader.ts           # ファイル読み込み
 │   │   │   ├── writer.ts           # ファイル書き出し
 │   │   │   └── validator.ts        # バリデーション
+│   │   ├── pdf/                    # PDF出力
+│   │   │   └── font-loader.ts      # 日本語フォント読み込み・キャッシュ
 │   │   └── security/               # セキュリティ
 │   │       └── sanitizer.ts        # CSVインジェクション対策
 │   ├── stores/                     # Zustandストア
 │   │   ├── file-store.ts           # ファイル状態
 │   │   └── ui-store.ts             # UI状態（テーマ等）
 │   ├── components/                 # Reactコンポーネント
-│   │   ├── layout/                 # AppShell, Header, StatusBar
+│   │   ├── layout/                 # AppShell, Header, StatusBar, ErrorBoundary, LoadingOverlay
 │   │   ├── editor/                 # SpreadsheetContainer
-│   │   ├── dialogs/                # FileOpen, FileSave, Settings
+│   │   ├── dialogs/                # FileDropZone, SaveDialog
 │   │   ├── toolbar/                # MainToolbar
 │   │   └── ui/                     # shadcn/ui共通コンポーネント
-│   ├── hooks/                      # useUniver, useFileIO, useTheme等
+│   ├── hooks/                      # useUniver, useFileIO, useBeforeUnload
 │   ├── lib/                        # ユーティリティ
+│   ├── encoding-japanese.d.ts      # encoding-japanese型定義
+│   ├── vite-env.d.ts               # Vite環境型定義
 │   └── styles/                     # globals.css
 ├── tests/
-│   ├── unit/                       # Vitest
+│   ├── unit/                       # Vitest ユニットテスト
 │   ├── integration/                # ラウンドトリップテスト
-│   ├── e2e/                        # Playwright
-│   └── fixtures/                   # テスト用xlsx/csvファイル
+│   ├── e2e/                        # Playwright E2Eテスト
+│   ├── fixtures/                   # テスト用xlsx/csvファイル
+│   └── setup.ts                    # テストセットアップ
 ├── docs/                           # ドキュメント
 │   ├── research/                   # 調査レポート
 │   └── architecture.md             # アーキテクチャ設計書
 ├── public/
+│   └── fonts/                      # フォントアセット（Noto Sans JP等）
 ├── vite.config.ts
+├── vitest.config.ts
+├── playwright.config.ts
 ├── package.json
 ├── CLAUDE.md
 ├── README.md
@@ -143,6 +154,7 @@ pnpm format       # Prettier
 | .xlsx | ○ | ○ | SheetJS | ExcelJS |
 | .xls | ○ | ○ | SheetJS | ×（xlsxとして保存） |
 | .csv | ○ | ○ | PapaParse | PapaParse |
+| .pdf | ○ | ○ | × | jsPDF + jspdf-autotable |
 | .ods | × | ○ | SheetJS | × |
 
 ## 制約・制限
@@ -180,6 +192,7 @@ CSVエクスポート時に危険なプレフィックス文字（`=`, `+`, `-`,
 - `src/core/security/sanitizer.ts` — CSVインジェクション検出ロジック
 - `src/core/encoding/detector.ts` — UTF-8/Shift_JIS/EUC-JP自動検出の精度
 - `src/core/encoding/encoder.ts` — エンコーディング出力の正当性
+- `src/core/pdf/font-loader.ts` — 日本語フォントの読み込み・キャッシュ・並行呼び出し
 
 カバレッジ目標: `src/core/` 配下で80%以上
 

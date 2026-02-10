@@ -31,6 +31,7 @@ Excelライセンス不要で、Excel/CSVファイルを閲覧・編集できる
 | Excel書き出し | ExcelJS |
 | CSV処理 | PapaParse |
 | PDF出力 | jsPDF + jspdf-autotable |
+| エンコーディング変換 | encoding-japanese |
 | UIコンポーネント | shadcn/ui + Tailwind CSS 4 |
 | 状態管理 | Zustand |
 
@@ -82,7 +83,7 @@ pnpm preview    # ビルド結果のプレビュー
 - **同時編集**: 1ファイルのみ（シングルファイルモード）
 - **CSV文字エンコーディング**: UTF-8、Shift_JIS、EUC-JP に対応（自動検出）
 - **セルスタイル**: スタイル変換未対応（フォント、色、罫線等は無視されます）
-- **PDF日本語**: jsPDFのデフォルトフォントは日本語非対応のため、日本語テキストは正しく表示されない場合があります
+- **PDF日本語**: 日本語フォント（Noto Sans JP）対応済み。PDF出力時に日本語テキストが正しく表示されます
 
 ## 開発
 

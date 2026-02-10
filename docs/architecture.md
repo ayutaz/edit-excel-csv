@@ -16,6 +16,8 @@ Excel/CSVブラウザ編集Webアプリのアーキテクチャ設計をまと�
 | Excel読み込み | SheetJS CE | 多形式対応（xlsx/xls/csv/ods）、高速パース |
 | Excel書き出し | ExcelJS | セルスタイリング対応が豊富、ストリーミング書込対応 |
 | CSV処理 | PapaParse | 最速、ブラウザ/Node.js両対応、自動エンコーディング検出 |
+| PDF出力 | jsPDF + jspdf-autotable | テーブルレイアウト対応、日本語フォント（Noto Sans JP）組み込み |
+| エンコーディング変換 | encoding-japanese | Shift_JIS/EUC-JP↔UTF-8 変換、バイト列レベルの文字コード検出 |
 | UIコンポーネント | shadcn/ui + Tailwind CSS 4 | バンドルサイズ極小、カスタマイズ性最高、Tailwindネイティブ |
 | 状態管理 | Zustand | 軽量、ボイラープレート最小、React外からもアクセス可能 |
 | テスト | Vitest + Playwright | Viteエコシステム統一、高速ユニットテスト + ブラウザE2E |
@@ -46,6 +48,7 @@ Excel/CSVブラウザ編集Webアプリのアーキテクチャ設計をまと�
 │  │ - univer-bridge (結合レイヤー)      ││
 │  │ - file-io (読み書き)               ││
 │  │ - encoding (文字エンコーディング)     ││
+│  │ - pdf (PDF出力・日本語フォント)      ││
 │  │ - security (バリデーション)         ││
 │  └─────────────────────────────────────┘│
 └─────────────────────────────────────────┘
@@ -72,6 +75,7 @@ edit-excel-csv/
 │   │   │   ├── setup.ts                      # Univerインスタンス初期化
 │   │   │   ├── import-adapter.ts             # SheetJS → Univer変換
 │   │   │   ├── export-adapter.ts             # Univer → ExcelJS/PapaParse変換
+│   │   │   ├── empty-workbook.ts             # 新規ワークブック生成
 │   │   │   └── types.ts                      # 共有型定義
 │   │   ├── encoding/                          # 文字エンコーディング
 │   │   │   ├── detector.ts                    # エンコーディング自動検出
@@ -81,23 +85,27 @@ edit-excel-csv/
 │   │   │   ├── reader.ts                     # ファイル読み込み
 │   │   │   ├── writer.ts                     # ファイル書き出し
 │   │   │   └── validator.ts                  # バリデーション
+│   │   ├── pdf/                              # PDF出力
+│   │   │   └── font-loader.ts                # 日本語フォント読み込み・キャッシュ
 │   │   └── security/                         # セキュリティ
 │   │       └── sanitizer.ts                  # CSVインジェクション対策
 │   ├── stores/                               # Zustandストア
 │   │   ├── file-store.ts                     # ファイル状態（ファイル名、変更フラグ等）
 │   │   └── ui-store.ts                       # UI状態（テーマ等）
 │   ├── components/                           # Reactコンポーネント
-│   │   ├── layout/                           # AppShell, Header, StatusBar
+│   │   ├── layout/                           # AppShell, Header, StatusBar, ErrorBoundary, LoadingOverlay
 │   │   ├── editor/                           # SpreadsheetContainer
-│   │   ├── dialogs/                          # FileOpen, FileSave, Settings
+│   │   ├── dialogs/                          # FileDropZone, SaveDialog
 │   │   ├── toolbar/                          # MainToolbar
 │   │   └── ui/                               # shadcn/ui共通コンポーネント
 │   ├── hooks/                                # カスタムフック
 │   │   ├── useUniver.ts                      # Univerライフサイクル管理
 │   │   ├── useFileIO.ts                      # ファイル操作
-│   │   └── useTheme.ts                       # テーマ切替（Phase 2）
+│   │   └── useBeforeUnload.ts                # ページ離脱時の未保存警告
 │   ├── lib/                                  # ユーティリティ
 │   │   └── utils.ts                          # cn()等の汎用関数
+│   ├── encoding-japanese.d.ts                # encoding-japanese型定義
+│   ├── vite-env.d.ts                         # Vite環境型定義
 │   └── styles/                               # スタイル
 │       └── globals.css                       # Tailwindベース + カスタム変数
 ├── tests/
@@ -105,7 +113,7 @@ edit-excel-csv/
 │   ├── integration/                          # ラウンドトリップテスト
 │   ├── e2e/                                  # Playwright E2Eテスト
 │   ├── fixtures/                             # テスト用xlsx/csvファイル
-│   └── benchmarks/                           # パフォーマンス計測
+│   └── setup.ts                              # テストセットアップ
 ├── docs/                                     # ドキュメント
 │   ├── research/                             # 調査レポート
 │   │   ├── market-analysis.md
@@ -113,10 +121,14 @@ edit-excel-csv/
 │   │   └── product-ux-analysis.md
 │   └── architecture.md                       # 本ドキュメント
 ├── public/                                   # 静的アセット
+│   └── fonts/                                # フォントアセット
+│       └── NotoSansJP-Regular-subset.ttf     # 日本語フォント（PDF出力用）
 ├── vite.config.ts                            # Vite設定
-├── tailwind.config.ts                        # Tailwind設定
+├── vitest.config.ts                          # Vitest設定
+├── playwright.config.ts                      # Playwright設定
 ├── tsconfig.json                             # TypeScript設定
-├── .eslintrc.cjs                             # ESLint設定
+├── tsconfig.app.json                         # アプリ用TypeScript設定
+├── eslint.config.js                          # ESLint設定（Flat Config）
 ├── .prettierrc                               # Prettier設定
 ├── .gitignore
 ├── CLAUDE.md                                 # Claude Code向けガイド
@@ -177,9 +189,12 @@ export-adapter.ts: convertUniverDataToExcelJS(snapshot)
     ├── [xlsx出力] → ExcelJS workbook.xlsx.writeBuffer()
     │                  → Blob → URL.createObjectURL → ダウンロード
     │
-    └── [csv出力]  → PapaParse Papa.unparse(data)
-                       → encodeCsvString(csv, encoding)
-                       → Blob → URL.createObjectURL → ダウンロード
+    ├── [csv出力]  → PapaParse Papa.unparse(data)
+    │                  → encodeCsvString(csv, encoding)
+    │                  → Blob → URL.createObjectURL → ダウンロード
+    │
+    └── [pdf出力]  → jsPDF + autoTable + loadJapaneseFont()
+                       → doc.output('blob') → URL.createObjectURL → ダウンロード
 ```
 
 ### データ型マッピング
@@ -232,14 +247,11 @@ const TYPE_MAP = {
 
 ### テストファイル (fixtures)
 
-- `small.xlsx` — 10行×5列、基本的なセルデータ
-- `large.xlsx` — 10,000行×20列、パフォーマンステスト用
-- `merged.xlsx` — セル結合あり
-- `formulas.xlsx` — 数式入りセル
-- `multisheets.xlsx` — 複数シート
+- `basic.xlsx` — 基本的なExcelファイル
 - `basic.csv` — 基本的なCSV
-- `unicode.csv` — 日本語/絵文字含むCSV
-- `empty.xlsx` — 空のワークブック
+- `shift_jis_sample.csv` — Shift_JISエンコーディングのCSV
+- `euc_jp_sample.csv` — EUC-JPエンコーディングのCSV
+- `搬出入届１日用.xlsx` — 日本語ファイル名のExcelファイル
 
 ---
 
@@ -359,9 +371,11 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor-react': ['react', 'react-dom'],
-          'vendor-univer': ['@univerjs/core', '@univerjs/sheets', '@univerjs/ui'],
-          'vendor-io': ['xlsx', 'exceljs', 'papaparse'],
+          univer: ['@univerjs/presets', '@univerjs/preset-sheets-core'],
+          sheetjs: ['xlsx'],
+          exceljs: ['exceljs'],
+          jspdf: ['jspdf', 'jspdf-autotable'],
+          encoding: ['encoding-japanese'],
         },
       },
     },

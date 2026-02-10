@@ -80,7 +80,7 @@ export function useFileIO({ loadWorkbook, getSnapshot }: UseFileIOOptions) {
         if (format === 'xlsx') {
           blob = await convertUniverToXlsx(snapshot)
         } else if (format === 'pdf') {
-          blob = convertUniverToPdf(snapshot)
+          blob = await convertUniverToPdf(snapshot)
         } else {
           blob = await convertUniverToCsv(snapshot, undefined, encoding)
         }
