@@ -17,22 +17,23 @@ export function useUniver(containerId: string, isReady: boolean = true) {
   useEffect(() => {
     if (!isReady) return
 
-    // Univerの内部数式エディタが初期化時にコンテナのレイアウト完了前に
-    // 列幅を計算するためエラーログが出る。自動修正されるため抑制する。
-    const originalError = console.error
-    console.error = (...args: unknown[]) => {
-      if (
-        typeof args[0] === 'string' &&
-        args[0].includes('column width is less than 0')
-      ) {
-        return
-      }
-      originalError.apply(console, args)
-    }
-
     const rafId = requestAnimationFrame(() => {
       const container = document.getElementById(containerId)
       if (!container) return
+
+      // Univerの内部数式エディタが初期化時にコンテナのレイアウト完了前に
+      // 列幅を計算するためエラーログが出る。自動修正されるため抑制する。
+      // 初期化完了後すぐに復元し、本番環境での重要エラーを隠さないようにする。
+      const originalError = console.error
+      console.error = (...args: unknown[]) => {
+        if (
+          typeof args[0] === 'string' &&
+          args[0].includes('column width is less than 0')
+        ) {
+          return
+        }
+        originalError.apply(console, args)
+      }
 
       try {
         instanceRef.current = createUniverInstance(containerId)
@@ -51,12 +52,13 @@ export function useUniver(containerId: string, isReady: boolean = true) {
           err instanceof Error ? err.message : 'Univerの初期化に失敗しました',
         )
         instanceRef.current = null
+      } finally {
+        console.error = originalError
       }
     })
 
     return () => {
       cancelAnimationFrame(rafId)
-      console.error = originalError
       try {
         instanceRef.current?.dispose()
       } catch {

@@ -113,17 +113,15 @@ describe('useUniver', () => {
     spy.mockRestore()
   })
 
-  it('アンマウント後にconsole.errorが復元される', () => {
+  it('初期化完了後にconsole.errorが復元される', () => {
     const originalError = console.error
     const { unmount } = renderHook(() => useUniver('test-container'))
 
-    // マウント中はconsole.errorがラップされている
-    expect(console.error).not.toBe(originalError)
+    // 初期化完了後は即座にconsole.errorが復元されている
+    expect(console.error).toBe(originalError)
 
-    // アンマウント
+    // アンマウント後も復元された状態が維持される
     unmount()
-
-    // console.errorが復元されている
     expect(console.error).toBe(originalError)
   })
 

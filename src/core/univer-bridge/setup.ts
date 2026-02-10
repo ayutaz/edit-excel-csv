@@ -35,6 +35,12 @@ export function createUniverInstance(containerId: string): UniverInstance {
 
   const instance: UniverInstance = {
     loadWorkbook(data: Partial<IWorkbookData>) {
+      // 既存ワークブックを破棄してから新規作成（同一IDの重複防止）
+      const existing = univerAPI.getActiveWorkbook()
+      if (existing) {
+        const existingId = existing.getId()
+        univerAPI.disposeUnit(existingId)
+      }
       univerAPI.createWorkbook(data)
     },
 

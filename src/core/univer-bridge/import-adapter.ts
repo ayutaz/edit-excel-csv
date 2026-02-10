@@ -156,7 +156,7 @@ export function convertSheetJSToUniverData(workbook: XLSX.WorkBook): IWorkbookDa
   }
 
   return {
-    id: 'workbook-01',
+    id: 'workbook-' + Date.now(),
     name: 'Workbook',
     appVersion: '0.1.0',
     locale: LocaleType.EN_US,
